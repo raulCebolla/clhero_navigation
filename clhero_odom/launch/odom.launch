@@ -1,0 +1,6 @@
+<launch>
+
+	<rosparam command="load" file="$(find clhero_odom)/config/clhero_geom.yaml" />
+	<node name="clhero_geom" pkg="clhero_geom" type="clhero_geom" output="screen"/>
+
+</launch>

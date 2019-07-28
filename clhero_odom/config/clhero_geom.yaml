@@ -1,0 +1,39 @@
+#=====================================================================
+#  Author: Raúl Cebolla Arroyo
+#  File:
+#  Version:
+#  Description:
+#  Changelog:
+#=====================================================================
+
+clhero_geom:
+
+  leg_1:
+    position:
+      x: -0.235
+      y: 0.233
+
+  leg_2:
+    position:
+      x: -0.235
+      y: -0.233
+
+  leg_3:
+    position:
+      x: 0
+      y: 0.289
+
+  leg_4:
+    position:
+      x: 0
+      y: -0.289
+
+  leg_5:
+    position:
+      x: 0.235
+      y: 0.233
+
+  leg_6:
+    position:
+      x: 0.235
+      y: -0.233
