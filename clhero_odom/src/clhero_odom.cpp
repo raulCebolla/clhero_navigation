@@ -43,18 +43,13 @@ struct Clhero_position {
   double dist;
 };
 
-struct Pose {
-  double x;
-  double y;
-  double giro;
-};
-
 //---------------------------------------------------------------
 //    Typedefs
 //---------------------------------------------------------------
 
 typedef struct Clhero_position Clhero_position;
-typedef struct Pose pose;
+typedef Eigen::Vector3d Pose2D; //Defines pose as: x, y, angle
+typedef Eigen::Matrix<double, 6, 1> Pose3D; //Defines pose as: x, y, z, roll, pitch, yaw
 
 //---------------------------------------------------------------
 //    Global variables
@@ -65,6 +60,20 @@ std::vector<Clhero_position> leg (6, {0, 0, 0, 0, 0});
 
 //Default geometry parent parameter name
 const std::string geometry_param_name = "/clhero_geom";
+
+//Limit angles which define the aerial and ground movement's
+//limits
+double max_take_off_angle;
+double min_landing_angle;
+
+//Publisher of the odometry msg
+ros::Publisher odometry_pub;
+
+//Vector containing the current and former pose
+std::vector<Pose2D> pose (2, Eigen::Vector3d::Zero());
+
+//Current and former time
+std::vector<ros::Time> t;
 
 //---------------------------------------------------------------
 //    Functions
@@ -169,7 +178,37 @@ bool setGeometryConfig (){
 
   }
 
+  //Checks for the limit angles
+  if(!nh.getParam(geometry_key + "/max_take_off_angle", max_take_off_angle)){
+    ROS_ERROR("[clhero_odom] Maximum take off angle has not been defined.");
+    return false;
+  }
+  if(!nh.getParam(geometry_key + "/min_landing_angle", min_landing_angle)){
+    ROS_ERROR("[clhero_odom] Minimum landing angle has not been defined.");
+    return false;
+  }
+
   return true;
+}
+
+//Callback for the state msg;
+void leg_state_sub_callback(const clhero_gait_controller::LegState::ConstPtr& msg){
+
+  double interval;
+
+  //Checks if the time corresponds to a future state
+  if(msg->stamp <= t[1]){
+    ROS_INFO("[clhero_odom] Leg state msg received refers to a previous time.");
+    return;
+  }else{
+    //if it corresponds to a new msg updates the time
+    t[0] = msg->stamp;
+    interval = (t[0] - t[1]).toSec(); 
+  }
+
+
+
+  return;
 }
 
 //---------------------------------------------------------------
@@ -191,6 +230,15 @@ int main(int argc, char **argv){
     ROS_ERROR("[clhero_odom] The required clhero geometry parameters does not exist. Terminating node.");
     return 0;
   }
+
+  //Initializes parameters
+  t = std::vector<ros::Time>(2, ros::Time::now());
+
+  //Odometry publisher
+  odometry_pub = nh.advertise<nav_msgs::Odometry>("/odom", 10);
+
+  //Legs' state subscriber
+  ros::Subscriber leg_state_sub = nh.subscribe("legs_state", 1000, leg_state_sub_callback);
 
   //----------------------------------------------------
   //    Core loop of the node

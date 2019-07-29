@@ -8,6 +8,8 @@
 
 clhero_geom:
 
+  #Relative coordinates of each leg in the robot's base
+
   leg_1:
     position:
       x: -0.235
@@ -37,3 +39,13 @@ clhero_geom:
     position:
       x: 0.235
       y: -0.233
+
+  #Limits of the available ground and aerial movement
+
+  max_take_off_angle: 1.8104073438134423
+  min_landing_angle: 4.223062462887382
+
+  #Robot's dimensions
+
+  leg_radius: 0.07925
+  base_height: 0.042
