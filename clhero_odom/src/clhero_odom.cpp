@@ -66,11 +66,15 @@ const std::string geometry_param_name = "/clhero_geom";
 double max_take_off_angle;
 double min_landing_angle;
 
+//Leg radius and minimum height
+double leg_radius;
+double min_height;
+
 //Publisher of the odometry msg
 ros::Publisher odometry_pub;
 
 //Vector containing the current and former pose
-std::vector<Pose2D> pose (2, Eigen::Vector3d::Zero());
+std::vector<Pose3D> pose (2, Pose3D::Zero());
 
 //Current and former time
 std::vector<ros::Time> t;
@@ -188,13 +192,31 @@ bool setGeometryConfig (){
     return false;
   }
 
+  //Checks for other geometry parameters
+  if(!nh.getParam(geometry_key + "/leg_radius", leg_radius)){
+    ROS_ERROR("[clhero_odom] Leg radius has not been defined.");
+    return false;
+  }
+  if(!nh.getParam(geometry_key + "/min_height", min_height)){
+    ROS_ERROR("[clhero_odom] Minimum height has not been defined.");
+    return false;
+  }
+
   return true;
 }
+
+//---------------------------------------------------------------
+//    Callbacks
+//---------------------------------------------------------------
 
 //Callback for the state msg;
 void leg_state_sub_callback(const clhero_gait_controller::LegState::ConstPtr& msg){
 
   double interval;
+  Pose2D prev_pose_2d, curr_pose_2d;
+
+  std::vector<int> legs_in_posible_ground_mov, highest_legs;
+  std::vector<float> posible_ground_legs_base_height;
 
   //Checks if the time corresponds to a future state
   if(msg->stamp <= t[1]){
@@ -205,6 +227,29 @@ void leg_state_sub_callback(const clhero_gait_controller::LegState::ConstPtr& ms
     t[0] = msg->stamp;
     interval = (t[0] - t[1]).toSec(); 
   }
+
+  //Once that the msg is identified as a new state, which legs
+  //are in contact with the ground shall be identified to 
+  //formulate the kinematic model.
+
+  //To do this, first which legs are in a posible ground 
+  //movement interval shall be identified
+  for(int i=0; i<msg->pos.size(); i++){
+    if((msg->pos[i] < max_take_off_angle) || (msg->pos[i] > min_landing_angle)){
+      //If this is the case, saves its id and calculates the
+      //associate height with that position
+      legs_in_posible_ground_mov.push_back(i+1);
+      posible_ground_legs_base_height.push_back(leg_radius*(1 - cos(msg->pos[i])));
+    }
+  }
+
+  //If there is no leg in posible ground movement
+  if(legs_in_posible_ground_mov.size() < 1){
+    //In construction
+    return;
+  }
+
+  //Checks for the highest legs
 
 
 
