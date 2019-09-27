@@ -77,7 +77,7 @@ double min_landing_angle;
 
 //Leg radius and minimum height
 double leg_radius;
-double min_height;
+//double min_height;
 
 //Publisher of the odometry msg
 ros::Publisher odometry_pub;
@@ -269,10 +269,10 @@ bool setGeometryConfig (){
     ROS_ERROR("[clhero_odom] Leg radius has not been defined.");
     return false;
   }
-  if(!nh.getParam(geometry_key + "/min_height", min_height)){
+  /*if(!nh.getParam(geometry_key + "/min_height", min_height)){
     ROS_ERROR("[clhero_odom] Minimum height has not been defined.");
     return false;
-  }
+  }*/
 
   return true;
 }
@@ -338,7 +338,7 @@ Eigen::Matrix<double, 6, 1> calcCycloidVel (std::vector<int> leg_id,
   for(int i = 0; i < leg_id.size(); i++){
     //X component
     //Vx = R*[vel - vel*cos(pos)]
-    v[2*i] = leg_radius * (vel[leg_id[i]-1] - vel[leg_id[i]-1]*cos(pos[leg_id[i]-1]));
+    v[2*i] = leg_radius * (vel[leg_id[i]-1] - vel[leg_id[i]-1]*cos(pos[leg_id[i]-1] + PI));
     //Y component
     //Vy = 0
     //As it is already initialized as 0, it shall not be modified
@@ -506,9 +506,9 @@ void leg_state_sub_callback(const clhero_gait_controller::LegState::ConstPtr& ms
   std::vector<double> legs_pos;
   std::vector<double> legs_vel;
 
-  for(int i=0; i < legs_pos.size(); i++){
-    legs_pos[i] = (double)msg->pos[i];
-    legs_vel[i] = (double)msg->vel[i];
+  for(int i=0; i < msg->pos.size(); i++){
+    legs_pos.push_back(msg->pos[i]);
+    legs_vel.push_back(msg->vel[i]);
   }
 
   //Once that the msg is identified as a new state, which legs
@@ -590,11 +590,14 @@ int main(int argc, char **argv){
   //Initializes parameters
   t = std::vector<ros::Time>(2, ros::Time::now());
 
+  robot_pose[0] = robot_pose[1] = Pose3D::Zero();
+  robot_velocity[0] = robot_velocity[1] = Pose3D::Zero();
+
   //Odometry publisher
-  odometry_pub = nh.advertise<nav_msgs::Odometry>("/odom", 10);
+  odometry_pub = nh.advertise<nav_msgs::Odometry>("/odom", 100);
 
   //Legs' state subscriber
-  ros::Subscriber leg_state_sub = nh.subscribe("legs_state", 1000, leg_state_sub_callback);
+  ros::Subscriber leg_state_sub = nh.subscribe("/clhero_gait_control/legs_state", 1000, leg_state_sub_callback);
 
   //----------------------------------------------------
   //    Core loop of the node
