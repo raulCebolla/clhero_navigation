@@ -151,6 +151,17 @@ Eigen::Vector2d calcLegVelocity(double ang, double ang_vel){
   
 }
 
+//Function that transforms the angle given in the clhero reference into the cycloid's
+double cycloid_angle (double a){
+
+  if(a <= PI){
+    return a + PI;
+  }else{
+    return a - PI;
+  }
+  
+}
+
 
 //Function that gathers the clhero geometry configuration and 
 //obtains other derived properties required for the odometry 
@@ -338,7 +349,7 @@ Eigen::Matrix<double, 6, 1> calcCycloidVel (std::vector<int> leg_id,
   for(int i = 0; i < leg_id.size(); i++){
     //X component
     //Vx = R*[vel - vel*cos(pos)]
-    v[2*i] = leg_radius * (vel[leg_id[i]-1] - vel[leg_id[i]-1]*cos(pos[leg_id[i]-1] + PI));
+    v[2*i] = leg_radius * (vel[leg_id[i]-1] - vel[leg_id[i]-1]*cos(cycloid_angle(pos[leg_id[i]-1])));
     //Y component
     //Vy = 0
     //As it is already initialized as 0, it shall not be modified
