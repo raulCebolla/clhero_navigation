@@ -47,5 +47,6 @@ clhero_geom:
 
   #Robot's dimensions
 
-  leg_radius: 0.07925
+  #leg_radius: 0.07925
+  leg_radius: 0.073
   base_height: 0.042
