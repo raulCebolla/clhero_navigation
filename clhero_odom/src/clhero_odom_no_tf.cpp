@@ -22,8 +22,6 @@
 #include <cmath>
 #include <Eigen/Dense>
 
-#include <tf/transform_broadcaster.h>
-
 //---------------------------------------------------------------
 //    Defines
 //---------------------------------------------------------------
@@ -90,9 +88,6 @@ std::vector<Pose3D> robot_velocity (2, Pose3D::Zero());
 
 //Current and former time
 std::vector<ros::Time> t;
-
-//TF broadcaster
-tf::TransformBroadcaster* odom_broadcaster;
 
 //---------------------------------------------------------------
 //    Functions
@@ -492,34 +487,22 @@ nav_msgs::Odometry buildOdomMsg (ros::Time t, Pose3D pose, Pose3D robot_vel){
   msg.twist.twist.angular.x = robot_vel[4];
   msg.twist.twist.angular.x = robot_vel[5];
 
+  //creates the covariance matrix
+  msg.pose.covariance = { 0.1,   0,   0,   0,   0,   0,
+                            0, 0.1,   0,   0,   0,   0, 
+                            0,   0, 0.1,   0,   0,   0,
+                            0,   0,   0, 0.1,   0,   0,
+                            0,   0,   0,   0, 0.1,   0,
+                            0,   0,   0,   0,   0, 0.1};
+
+  msg.twist.covariance = { 0.1,   0,   0,   0,   0,   0,
+                             0, 0.1,   0,   0,   0,   0, 
+                             0,   0, 0.1,   0,   0,   0,
+                             0,   0,   0, 0.1,   0,   0,
+                             0,   0,   0,   0, 0.1,   0,
+                             0,   0,   0,   0,   0, 0.1};
+
   return msg;
-}
-
-//Function that builds the odometry tf msg
-geometry_msgs::TransformStamped buildTfMsg (ros::Time t, Pose3D pose){
-
-	geometry_msgs::TransformStamped tf_msg;
-
-	//Sets the header
-	tf_msg.header.stamp = t;
-	tf_msg.header.frame_id = "odom";
-	tf_msg.child_frame_id = "base_footprint";
-
-	//Sets the pose
-	tf_msg.transform.translation.x = pose[0];
-	tf_msg.transform.translation.y = pose[1];
-	tf_msg.transform.translation.z = pose[2];
-
-	//Creates the orientation quaternion
-	Matrix<double,4,1> q = rotationQuaternion(pose[5], {0,0,1});
-
-	tf_msg.transform.rotation.x = q[0];
-	tf_msg.transform.rotation.y = q[1];
-	tf_msg.transform.rotation.z = q[2];
-	tf_msg.transform.rotation.w = q[3];
-
-	return tf_msg;
-
 }
 
 //---------------------------------------------------------------
@@ -572,9 +555,6 @@ void leg_state_sub_callback(const clhero_gait_controller::LegState::ConstPtr& ms
     robot_velocity[0] = Pose3D::Zero();
     robot_pose[1] = robot_pose[0];
 
-    //builds and sends the tf
-    odom_broadcaster->sendTransform(buildTfMsg(t[0], robot_pose[0]));
-
     //builds and sends the msg
     odometry_pub.publish(buildOdomMsg(t[0], robot_pose[0], robot_velocity[0]));
 
@@ -606,9 +586,6 @@ void leg_state_sub_callback(const clhero_gait_controller::LegState::ConstPtr& ms
 
   //And the current pose:
   robot_pose[0] = getNewPose(robot_pose[1], robot_velocity[0], robot_velocity[1], interval);
-
-  //builds and sends the tf
-  odom_broadcaster->sendTransform(buildTfMsg(t[0], robot_pose[0]));
 
   //Finally the odometry msg is built and sent
   odometry_pub.publish(buildOdomMsg(t[0], robot_pose[0], robot_vel));
@@ -644,9 +621,6 @@ int main(int argc, char **argv){
 
   //Odometry publisher
   odometry_pub = nh.advertise<nav_msgs::Odometry>("/odom", 100);
-
-  //tf broadcaster
-  odom_broadcaster = new tf::TransformBroadcaster();
 
   //Legs' state subscriber
   ros::Subscriber leg_state_sub = nh.subscribe("/clhero_gait_control/legs_state", 1000, leg_state_sub_callback);
