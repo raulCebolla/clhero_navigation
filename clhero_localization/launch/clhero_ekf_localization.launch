@@ -1,6 +1,9 @@
+
 <launch>
 
 	<arg name="legs_odom_topic_name" default="legs_odom"/>
+    <arg name="base_frame" default="base_footprint"/>
+
 	
 	<!-- Legs odometry -->
 
@@ -8,6 +11,15 @@
 	<node name="clhero_odom" pkg="clhero_odom" type="clhero_odom_no_tf" output="screen">
 		<remap from="odom" to="$(arg legs_odom_topic_name)"/>
 	</node>
+
+    <!--realsense-->
+
+    <include file="$(find realsense2_camera)/launch/rs_camera_depth_rectifier.launch"/>
+
+    <!--Orbslam-->
+
+    <!--node pkg="ORB_SLAM2" type="RGBD" name="orbslam_odom" args="ws/clhero_ws/src/ORB_SLAM2/Vocabulary/ORBvoc.txt ws/clhero_ws/src/realsense-ros/realsense2_camera/config/realsense_640.yaml"/-->
+
 
 	<!-- EKF -->
 
@@ -17,11 +29,17 @@
     	<param name="sensor_timeout" value="2.0"/>
     	<param name="odom_used" value="true"/>
     	<param name="imu_used" value="false"/>
-    	<param name="vo_used" value="false"/>
+    	<param name="vo_used" value="true"/>
     	<param name="debug" value="false"/>
     	<param name="self_diagnose" value="false"/>
     	<remap from="odom" to="$(arg legs_odom_topic_name)"/>
     	<remap from="robot_pose_ekf/odom_combined" to="/odom"/>
+        <remap from="vo" to="orb_slam/odom"/>
   	</node>
+
+    <node pkg="clhero_localization" type="odom_filler" name="odom_filler">
+        <param name="base_frame" value="$(arg base_frame)"/>
+    </node>
+
 
 </launch>

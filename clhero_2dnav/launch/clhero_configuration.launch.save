@@ -1,0 +1,29 @@
+<launch>
+
+	<!--=========================================-->
+	<!--	Odometry							 -->
+	<!--=========================================-->
+
+	<rosparam command="load" file="$(find clhero_odom)/config/clhero_geom.yaml" />
+	<node name="clhero_odom" pkg="clhero_odom" type="clhero_odom" output="screen"/>
+
+	<!--=========================================-->
+	<!--	Sensors								 -->
+	<!--=========================================-->
+
+	<!--Realsense camera-->
+	<include file="$(find realsense2_camera)/launch/rs_camera_depth_rectifier.launch">
+
+	<!--include file="$(find clhero_description)/launch/clhero_rviz.launch"/-->
+
+	<!--=========================================-->
+	<!--	Command interface					 -->
+	<!--=========================================-->
+
+	<node name="clhero_vel_interface" pkg="clhero_2dnav" type="clhero_vel_interface" output="screen" />
+
+	<!-- REMAPPING -->
+
+		
+
+</launch>
