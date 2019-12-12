@@ -13,6 +13,7 @@
 #include <ros/ros.h>
 #include <clhero_gait_controller/LegState.h>
 #include <nav_msgs/Odometry.h>
+#include <sensor_msgs/Imu.h>
 #include <map>
 #include <vector>
 #include <string>
@@ -30,6 +31,8 @@
 #define LEG_NUMBER 6
 #define MAX_PARAM_SEARCH_LOOP_ITERATIONS 180
 #define PI 3.14159265359
+#define IMU_MSG_CHECK_RATE 10
+#define IMU_MSG_RECEPTION_TIME_LIMIT 20 //[seconds]
 
 //---------------------------------------------------------------
 //    Using namespaces
@@ -88,6 +91,9 @@ std::vector<Pose3D> robot_velocity (2, Pose3D::Zero());
 
 //Current and former time
 std::vector<ros::Time> t;
+
+//flag that indicates that the imu initialization has been done
+bool imu_initialization_done = false;
 
 //---------------------------------------------------------------
 //    Functions
@@ -593,6 +599,23 @@ void leg_state_sub_callback(const clhero_gait_controller::LegState::ConstPtr& ms
   return;
 }
 
+//Callback of the imu msg
+void imu_callback (const sensor_msgs::Imu::ConstPtr& msg){
+
+  ROS_INFO("[clhero_odom] IMU msg received");
+
+  //Obtains the angle from the orientation quaternion
+  double theta = 2 * acos(msg->orientation.w);
+
+  //Sets the yaw angle to the angle obtained from the imu
+  robot_pose[0][5] = robot_pose[1][5] = theta;
+
+  //Sets the initialization flag to surpass the barrier
+  imu_initialization_done = true;
+
+  return;
+}
+
 //---------------------------------------------------------------
 //    Main function
 //---------------------------------------------------------------
@@ -618,6 +641,39 @@ int main(int argc, char **argv){
 
   robot_pose[0] = robot_pose[1] = Pose3D::Zero();
   robot_velocity[0] = robot_velocity[1] = Pose3D::Zero();
+
+  //Checks for the imu parameter in the private namespace
+  ros::NodeHandle private_nh ("~");
+  ros::Subscriber imu_sub;
+
+  bool use_imu;
+  private_nh.getParam("imu", use_imu);
+  ros::Rate imu_rate (IMU_MSG_CHECK_RATE);
+  ros::Time imu_check_starting_time;
+
+  //If the imu shall be used to initialize the orientation
+  if(use_imu){
+    ROS_INFO("[clhero_odom] Usage of IMU to initialize orientation is set.");
+    //Subscribes to the /imu topic
+    imu_sub = private_nh.subscribe("imu", 1000, imu_callback);
+    //Blocks the execution of the program until a imu msg is received and the
+    //robot first pose may be executed
+    imu_check_starting_time = ros::Time::now();
+    while(!imu_initialization_done){
+      ros::spinOnce();
+      //Checks if the time limit has been exceeded
+      if((ros::Time::now() - imu_check_starting_time).toSec() > IMU_MSG_RECEPTION_TIME_LIMIT){
+        //Cancels the imu initialization, thus, the default initiazlization is chosen
+        ROS_WARN("[clhero_odom] No IMU msg was received in the expected time span. Default starting pose is chosen.");
+        break;
+      }
+    }
+    //The initialization has been succesfully done
+    ROS_INFO("[clhero_odom] Pose initialization done.");
+  }else{
+    //If the imu initialization is not set
+    ROS_INFO("[clhero_odom] Default starting pose set.");
+  }
 
   //Odometry publisher
   odometry_pub = nh.advertise<nav_msgs::Odometry>("/odom", 100);
