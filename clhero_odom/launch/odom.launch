@@ -1,6 +1,10 @@
 <launch>
 
+	<arg name="imu" default="true"/>
+
 	<rosparam command="load" file="$(find clhero_odom)/config/clhero_geom.yaml" />
-	<node name="clhero_odom" pkg="clhero_odom" type="clhero_odom" output="screen"/>
+	<node name="clhero_odom" pkg="clhero_odom" type="clhero_odom" output="screen">
+		<param name="imu" value="$(arg imu)"/>
+	</node>
 
 </launch>

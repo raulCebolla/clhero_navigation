@@ -499,14 +499,14 @@ nav_msgs::Odometry buildOdomMsg (ros::Time t, Pose3D pose, Pose3D robot_vel){
                             0,   0, 0.1,   0,   0,   0,
                             0,   0,   0, 0.1,   0,   0,
                             0,   0,   0,   0, 0.1,   0,
-                            0,   0,   0,   0,   0, 0.1};
+                            0,   0,   0,   0,   0, 0.5};
 
   msg.twist.covariance = { 0.1,   0,   0,   0,   0,   0,
                              0, 0.1,   0,   0,   0,   0, 
                              0,   0, 0.1,   0,   0,   0,
                              0,   0,   0, 0.1,   0,   0,
                              0,   0,   0,   0, 0.1,   0,
-                             0,   0,   0,   0,   0, 0.1};
+                             0,   0,   0,   0,   0, 0.5};
 
   return msg;
 }
@@ -655,7 +655,7 @@ int main(int argc, char **argv){
   if(use_imu){
     ROS_INFO("[clhero_odom] Usage of IMU to initialize orientation is set.");
     //Subscribes to the /imu topic
-    imu_sub = private_nh.subscribe("imu", 1000, imu_callback);
+    imu_sub = nh.subscribe("imu", 1000, imu_callback);
     //Blocks the execution of the program until a imu msg is received and the
     //robot first pose may be executed
     imu_check_starting_time = ros::Time::now();
@@ -670,6 +670,7 @@ int main(int argc, char **argv){
     }
     //The initialization has been succesfully done
     ROS_INFO("[clhero_odom] Pose initialization done.");
+    imu_sub.shutdown();
   }else{
     //If the imu initialization is not set
     ROS_INFO("[clhero_odom] Default starting pose set.");

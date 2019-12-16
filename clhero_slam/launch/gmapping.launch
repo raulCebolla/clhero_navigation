@@ -1,0 +1,10 @@
+<launch>
+
+	<node pkg="gmapping" type="slam_gmapping" name="slam_gmapping">
+		<param name="base_frame" value="base_link"/>
+		<param name="map_frame" value="map"/>
+		<param name="odom_frame" value="odom"/>
+		<param name="map_update_interval" value="0.1"/>
+	</node>
+
+</launch>
